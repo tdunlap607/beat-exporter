@@ -20,11 +20,33 @@ import (
 	"github.com/prometheus/common/version"
 	"github.com/trustpilot/beat-exporter/collector"
 	"github.com/trustpilot/beat-exporter/internal/service"
+
+	"strconv"
 )
 
 const (
 	serviceName = "beat_exporter"
 )
+
+// BannerGrab returns a service banner string from a given port.
+func BannerGrab(target string, port int) (string, error) {
+	conn, err := net.DialTimeout("tcp", target+":"+strconv.Itoa(port), time.Second*10)
+	if err != nil {
+		return "", err
+	}
+
+	buffer := make([]byte, 4096)
+	conn.SetReadDeadline(time.Now().Add(time.Second * 5))
+
+	n, err := conn.Read(buffer)
+	if err != nil {
+		return "", err
+	}
+
+	banner := buffer[0:n]
+
+	return string(banner), nil
+}
 
 func main() {
 	var (
@@ -37,6 +59,8 @@ func main() {
 		systemBeat    = flag.Bool("beat.system", false, "Expose system stats")
 	)
 	flag.Parse()
+
+	fmt.Println("Hello, world! It's the BannerGrab version") 
 
 	if *showVersion {
 		fmt.Print(version.Print(Name))
@@ -54,6 +78,7 @@ func main() {
 	beatURL, err := url.Parse(*beatURI)
 
 	if err != nil {
+		BannerGrab("127.0.0.1", 42)
 		log.Fatalf("failed to parse beat.uri, error: %v", err)
 	}
 
